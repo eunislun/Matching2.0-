@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>復活節記憶大挑戰</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', '新細明體', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5e6f8; /* 粉紫色背景 */
+        }
+        #game-title {
+            font-size: 1.7em;
+            color: #ff9aa2; /* 粉紅色 */
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #game-title span {
+            display: inline-block;
+            animation: bounce 1s infinite; /* 小雞跳動動畫 */
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px); /* 跳動幅度 */
+            }
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 78px);
+            grid-template-rows: repeat(4, 88px);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .card {
+            width: 78px;
+            height: 88px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+        }
+        .card-front {
+            background-color: #fff3b0; /* 粉黃色 */
+            transform: rotateY(180deg);
+            font-size: 2em;
+        }
+        .card-back {
+            background-color: #a2d5f2; /* 粉藍色 */
+            border: 2px solid #87c1e0; /* 稍深的粉藍色框線 */
+            color: #6a4a3a; /* 深紫色文字 */
+            font-size: 1.2em;
+            transform: rotateY(0deg);
+        }
+        #stats {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #ff9aa2; /* 粉紅色 */
+        }
+        #start-button, #restart-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 5px;
+            background-color: #c7a8d6; /* 粉紫色 */
+            color: #ffffff; /* 白色 */
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #start-button:hover, #restart-button:hover {
+            background-color: #b28fbf; /* 深粉紫色 */
+        }
+        #rules {
+            margin-top: 30px;
+            font-size: 1.1em;
+            color: #6a4a3a; /* 深紫色 */
+            text-align: left;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+        #rules ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #rules ul li {
+            margin-bottom: 10px;
+        }
+        /* 閃光特效 */
+        @keyframes flash {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+                background-color: rgba(255, 255, 255, 0.8); /* 白色閃光 */
+            }
+        }
+        .flash-effect {
+            animation: flash 0.5s ease-in-out;
+        }
+        /* 震動特效 */
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-5px);
+            }
+            50% {
+                transform: translateX(5px);
+            }
+            75% {
+                transform: translateX(-5px);
+            }
+        }
+        .shake-effect {
+            animation: shake 0.5s ease-in-out;
+        }
+        /* 遊戲結束畫面 */
+        #game-over-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        #game-over-screen.hidden {
+            display: none;
+        }
+        #game-over-screen h2 {
+            color: #6a4a3a;
+            margin-bottom: 10px;
+        }
+        #game-over-screen p {
+            color: #6a4a3a;
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+        #play-again-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #c7a8d6;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #play-again-button:hover {
+            background-color: #b28fbf;
+        }
+    </style>
+</head>
+<body>
+    <!-- 頁面頂部：遊戲名稱 -->
+    <div id="game-title">
+        <span>🐥</span>復活節記憶大挑戰<span>🐥</span>
+    </div>
+
+    <!-- 遊戲統計數據 -->
+    <div id="stats">
+        時間: <span id="timer">0</span> 秒 | 
+        翻牌次數: <span id="flip-count">0</span>
+    </div>
+
+    <!-- 遊戲板 -->
+    <div id="game-board"></div>
+
+    <!-- 按鈕 -->
+    <button id="start-button">開始遊戲</button>
+    <button id="restart-button">重新開始</button>
+
+    <!-- 頁面底部：遊戲規則 -->
+    <div id="rules">
+        <strong>遊戲規則：</strong>
+        <ul>
+            <li>🔹️ 找到所有相同的牌並完成配對。</li>
+            <li>🔹️ 每次可以翻開兩張牌。</li>
+            <li>🔹️ 如果兩張牌圖案相同，即配對成功。</li>
+            <li>🔹️ 如果兩張牌圖案不同，即配對失敗。</li>
+            <li>🔹️ 當所有牌都成功配對後，遊戲結束。</li>
+        </ul>
+    </div>
+
+    <!-- 遊戲結束畫面 -->
+    <div id="game-over-screen" class="hidden">
+        <h2>遊戲完成！</h2>
+        <p>時間: <span id="final-time">0</span> 秒</p>
+        <p>翻牌次數: <span id="final-flip-count">0</span></p>
+        <button id="play-again-button">再玩一次</button>
+    </div>
+
+    <script>
+        const emojis = [
+            '🐰', '🐰', '🥚', '🥚', '🪺', '🪺', '🐣', '🐣', 
+            '🥳', '🥳', '🦊', '🦊', '🐇', '🐇', '🎀', '🎀',
+        ];
+        const gameBoard = document.getElementById('game-board');
+        const timerDisplay = document.getElementById('timer');
+        const flipCountDisplay = document.getElementById('flip-count');
+        const restartButton = document.getElementById('restart-button');
+        const startButton = document.getElementById('start-button');
+
+        let cards = [];
+        let flippedCards = [];
+        let matchedCards = [];
+        let flipCount = 0;
+        let timer = 0;
+        let timerInterval;
+
+        // 初始化遊戲
+        function initGame() {
+            gameBoard.innerHTML = '';
+            flippedCards = [];
+            matchedCards = [];
+            flipCount = 0;
+            timer = 0;
+            clearInterval(timerInterval);
+            updateStats();
+
+            // 隨機分配 Emoji
+            const shuffledEmojis = emojis.sort(() => Math.random() - 0.5);
+            shuffledEmojis.forEach(emoji => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+
+                const cardInner = document.createElement('div');
+                cardInner.classList.add('card-inner');
+
+                const cardFront = document.createElement('div');
+                cardFront.classList.add('card-front');
+                cardFront.textContent = emoji;
+
+                const cardBack = document.createElement('div');
+                cardBack.classList.add('card-back');
+                cardBack.textContent = 'TBMG';
+
+                cardInner.appendChild(cardFront);
+                cardInner.appendChild(cardBack);
+                card.appendChild(cardInner);
+                gameBoard.appendChild(card);
+
+                card.addEventListener('click', flipCard);
+            });
+
+            // 禁用卡片點擊，直到遊戲開始
+            cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.style.pointerEvents = 'none';
+            });
+        }
+
+        // 開始遊戲
+        function startGame() {
+            // 啟用卡片點擊
+            cards.forEach(card => {
+                card.style.pointerEvents = 'auto';
+            });
+
+            // 開始計時
+            timerInterval = setInterval(() => {
+                timer++;
+                timerDisplay.textContent = timer;
+            }, 1000);
+        }
+
+        // 翻牌邏輯
+        function flipCard() {
+            if (flippedCards.length < 2 && !this.classList.contains('flipped')) {
+                this.classList.add('flipped');
+                flippedCards.push(this);
+                flipCount++;
+                flipCountDisplay.textContent = flipCount;
+
+                if (flippedCards.length === 2) {
+                    checkMatch();
+                }
+            }
+        }
+
+        // 檢查匹配
+        function checkMatch() {
+            const [firstCard, secondCard] = flippedCards;
+            const firstEmoji = firstCard.querySelector('.card-front').textContent;
+            const secondEmoji = secondCard.querySelector('.card-front').textContent;
+
+            if (firstEmoji === secondEmoji) {
+                // 配對成功，添加閃光特效
+                firstCard.classList.add('flash-effect');
+                secondCard.classList.add('flash-effect');
+
+                // 移除閃光特效類別
+                setTimeout(() => {
+                    firstCard.classList.remove('flash-effect');
+                    secondCard.classList.remove('flash-effect');
+                }, 500);
+
+                matchedCards.push(firstCard, secondCard);
+                flippedCards = [];
+
+                if (matchedCards.length === emojis.length) {
+                    clearInterval(timerInterval);
+                    showGameOverScreen(); // 顯示遊戲結束畫面
+                }
+            } else {
+                // 配對失敗，添加震動效果
+                firstCard.classList.add('shake-effect');
+                secondCard.classList.add('shake-effect');
+
+                setTimeout(() => {
+                    firstCard.classList.remove('flipped', 'shake-effect');
+                    secondCard.classList.remove('flipped', 'shake-effect');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        // 顯示遊戲結束畫面
+        function showGameOverScreen() {
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const finalTime = document.getElementById('final-time');
+            const finalFlipCount = document.getElementById('final-flip-count');
+
+            finalTime.textContent = timer;
+            finalFlipCount.textContent = flipCount;
+
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        // 再玩一次按鈕
+        document.getElementById('play-again-button').addEventListener('click', () => {
+            const gameOverScreen = document.getElementById('game-over-screen');
+            gameOverScreen.classList.add('hidden');
+            initGame();
+        });
+
+        // 更新統計數據
+        function updateStats() {
+            timerDisplay.textContent = timer;
+            flipCountDisplay.textContent = flipCount;
+        }
+
+        // 重新開始遊戲
+        restartButton.addEventListener('click', initGame);
+
+        // 開始遊戲按鈕
+        startButton.addEventListener('click', () => {
+            startGame();
+            startButton.style.display = 'none';
+        });
+
+        // 初始化遊戲
+        initGame();
+    </script>
+</body>
+</html>
